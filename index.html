@@ -2,6 +2,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>บันทึกการเติมยา</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2E6B93">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="เติมยา">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chonburi&family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -257,6 +263,7 @@
 
   .hint { font-size: 0.75rem; color: var(--ink-faint); }
   .hint-accent { color: var(--accent); font-weight: 500; }
+  .hint-warn { color: var(--danger); font-weight: 500; }
 
   input.suggested {
     border-color: var(--accent-line);
@@ -425,6 +432,18 @@
     color: var(--ink-faint);
     padding: 4px 0;
   }
+  #searchInput { margin-bottom: 14px; }
+  .hist-date {
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 1px;
+    font-size: 0.72rem;
+    color: var(--ink-faint);
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    text-align: right;
+  }
   .hist-refresh {
     font-size: 0.76rem;
     color: var(--accent);
@@ -480,6 +499,7 @@
         <div class="field">
           <label for="qtyInput">จำนวน <span class="req">*</span></label>
           <input type="number" id="qtyInput" inputmode="numeric" min="1" step="1" placeholder="0" required>
+          <div class="hint hint-warn" id="qtyHint" hidden></div>
         </div>
       </div>
 
@@ -545,7 +565,17 @@
     </div>
   </section>
 
-
+  <section class="card">
+    <div class="hist-head">
+      <span class="hist-title">ค้นหาประวัติทั้งหมด</span>
+      <span class="hist-count" id="searchCount"></span>
+    </div>
+    <input type="text" id="searchInput" placeholder="พิมพ์ชื่อยา หรือ เลขล็อต" autocomplete="off">
+    <div id="searchBody">
+      <div class="hist-state" id="searchState">พิมพ์เพื่อค้นหาย้อนหลังทั้งหมด</div>
+      <div class="hist-list" id="searchList" hidden></div>
+    </div>
+  </section>
 </main>
 
 <iframe name="hiddenTarget" style="display:none" title="ช่องส่งข้อมูล"></iframe>
@@ -573,12 +603,14 @@
   // below), so a name typed as "new" by any staff member on any device
   // becomes a normal search suggestion for everyone from then on.
   let knownDrugs = new Set(DRUGS);
+  let qtyStatsByDrug = {};
 
   const FORM_ACTION = "https://docs.google.com/forms/d/e/1FAIpQLSf852tiF0uwwlC4l8hJ7OCa2HPaXyMLxJR02T_E78uindY2AA/formResponse";
   const SHEET_ID = "197v-eXqAF6c-uR6OR2widnehgLvCkd1sKJaDmwCSuOI";
   const SHEET_TAB = "Form Responses 1";
   const ENTRY = {
     drug: "entry.392800974",
+    otherDrugName: "entry.753957884",
     qty: "entry.1713042749",
     lot: "entry.1057982283",
     recorder: "entry.1877313363",
@@ -586,12 +618,19 @@
     expiryMonth: "entry.2137785579_month",
     expiryDay: "entry.2137785579_day"
   };
+  // The Form's ชื่อยา question is a closed Dropdown — Google rejects any
+  // submitted value that isn't one of its listed options. A drug added via
+  // "+ เพิ่ม ... เป็นยาใหม่" is never a listed option, so it must be
+  // submitted as this literal option (added as a real 60th option in the
+  // Form) with the actual name carried in a separate short-answer field.
+  const OTHER_DRUG_OPTION = "อื่นๆ (ระบุในช่องด้านล่าง)";
 
   const drugInput = document.getElementById("drugInput");
   const drugList = document.getElementById("drugList");
   const lotInput = document.getElementById("lotInput");
   const lotHint = document.getElementById("lotHint");
   const qtyInput = document.getElementById("qtyInput");
+  const qtyHint = document.getElementById("qtyHint");
   const expiryDay = document.getElementById("expiryDay");
   const expiryMonth = document.getElementById("expiryMonth");
   const expiryYear = document.getElementById("expiryYear");
@@ -640,10 +679,30 @@
     drugInput.setAttribute("aria-expanded", "true");
   }
 
+  function checkQtyOutlier() {
+    const drug = drugInput.value.trim();
+    const qty = Number(qtyInput.value);
+    const stats = qtyStatsByDrug[drug];
+    if (!stats || stats.count < 2 || !qty || qty <= 0) {
+      qtyHint.hidden = true;
+      return;
+    }
+    if (qty > stats.avg * 3 || qty < stats.avg * 0.3) {
+      qtyHint.hidden = false;
+      qtyHint.textContent = `จำนวนนี้ต่างจากที่เคยบันทึกของยานี้มาก (ปกติเฉลี่ยประมาณ ${Math.round(stats.avg)}) ตรวจสอบอีกครั้ง`;
+    } else {
+      qtyHint.hidden = true;
+    }
+  }
+
+  qtyInput.addEventListener("input", checkQtyOutlier);
+
   function selectDrug(value) {
     drugInput.value = value;
     drugList.hidden = true;
     drugInput.setAttribute("aria-expanded", "false");
+    qtyHint.hidden = true;
+    checkQtyOutlier();
 
     const lastLot = lastLotByDrug[value];
     if (lastLot) {
@@ -807,7 +866,14 @@
     const drugVal = drugInput.value.trim();
 
     const body = new URLSearchParams();
-    body.set(ENTRY.drug, drugVal);
+    if (DRUGS.includes(drugVal)) {
+      body.set(ENTRY.drug, drugVal);
+    } else {
+      // Not one of the Form's original listed options: submit the
+      // dedicated "other" option plus the real name in its own field.
+      body.set(ENTRY.drug, OTHER_DRUG_OPTION);
+      body.set(ENTRY.otherDrugName, drugVal);
+    }
     body.set(ENTRY.lot, lotInput.value.trim());
     body.set(ENTRY.qty, qtyInput.value.trim());
     body.set(ENTRY.recorder, "PH" + recorderDigits);
@@ -853,6 +919,7 @@
       lotInput.classList.remove("suggested");
       lotHint.hidden = true;
       qtyInput.value = "";
+      qtyHint.hidden = true;
       expiryDay.value = "";
       expiryMonth.value = "";
       expiryYear.value = "";
@@ -867,7 +934,12 @@
   const histState = document.getElementById("histState");
   const histList = document.getElementById("histList");
   const histCount = document.getElementById("histCount");
+  const searchInput = document.getElementById("searchInput");
+  const searchState = document.getElementById("searchState");
+  const searchList = document.getElementById("searchList");
+  const searchCount = document.getElementById("searchCount");
   let lastLotByDrug = {};
+  let allRows = [];
 
   function parseGvizDate(v) {
     // gviz encodes datetime cells as the literal string "Date(Y,M,D,h,m,s)"
@@ -880,6 +952,16 @@
 
   function sameDay(a, b) {
     return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+  }
+
+  // Manual formatting, not toLocaleDateString("th-TH", ...): the th-TH
+  // locale defaults to the Buddhist calendar (e.g. 2569 instead of 2026),
+  // the same trap the expiry-date picker had.
+  function fmtTime(d) {
+    return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+  }
+  function fmtDate(d) {
+    return String(d.getDate()).padStart(2, "0") + "/" + String(d.getMonth() + 1).padStart(2, "0") + "/" + d.getFullYear();
   }
 
   function renderTodayHistory(rows) {
@@ -896,7 +978,7 @@
     }
 
     histList.innerHTML = todayRows.map(r => {
-      const time = r.ts.toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
+      const time = fmtTime(r.ts);
       const metaParts = [r.lot, r.qty ? `จำนวน ${r.qty}` : "", r.recorder].filter(Boolean);
       return `
         <div class="hist-item">
@@ -925,6 +1007,65 @@
     return result;
   }
 
+  function buildQtyStatsByDrug(rows) {
+    const byDrug = {};
+    for (const r of rows) {
+      const q = Number(r.qty);
+      if (!r.drug || !r.qty || !Number.isFinite(q) || q <= 0) continue;
+      (byDrug[r.drug] = byDrug[r.drug] || []).push(q);
+    }
+    const result = {};
+    for (const drug in byDrug) {
+      const vals = byDrug[drug];
+      result[drug] = { avg: vals.reduce((a, b) => a + b, 0) / vals.length, count: vals.length };
+    }
+    return result;
+  }
+
+  function renderSearch(query) {
+    const q = query.trim().toLowerCase();
+    if (q === "") {
+      searchState.hidden = false;
+      searchState.textContent = "พิมพ์เพื่อค้นหาย้อนหลังทั้งหมด";
+      searchList.hidden = true;
+      searchCount.textContent = "";
+      return;
+    }
+
+    const matches = allRows
+      .filter(r => r.drug.toLowerCase().includes(q) || r.lot.toLowerCase().includes(q))
+      .sort((a, b) => b.ts - a.ts)
+      .slice(0, 50);
+
+    searchCount.textContent = matches.length > 0 ? `${matches.length} รายการ` : "";
+
+    if (matches.length === 0) {
+      searchState.hidden = false;
+      searchState.textContent = "ไม่พบรายการที่ตรงกับคำค้นหา";
+      searchList.hidden = true;
+      return;
+    }
+
+    searchList.innerHTML = matches.map(r => {
+      const date = fmtDate(r.ts);
+      const time = fmtTime(r.ts);
+      const metaParts = [r.lot, r.qty ? `จำนวน ${r.qty}` : "", r.recorder].filter(Boolean);
+      return `
+        <div class="hist-item">
+          <span class="hist-dot"></span>
+          <div class="hist-main">
+            <div class="hist-drug">${escapeHtml(r.drug)}</div>
+            <div class="hist-meta">${escapeHtml(metaParts.join(" · "))}</div>
+          </div>
+          <div class="hist-date"><div>${escapeHtml(date)}</div><div>${escapeHtml(time)}</div></div>
+        </div>`;
+    }).join("");
+    searchState.hidden = true;
+    searchList.hidden = false;
+  }
+
+  searchInput.addEventListener("input", () => renderSearch(searchInput.value));
+
   async function loadData() {
     histState.hidden = false;
     histState.textContent = "กำลังโหลด…";
@@ -943,9 +1084,13 @@
         .map(r => {
           const c = r.c || [];
           const ts = c[0] && c[0].v ? parseGvizDate(c[0].v) : null;
+          let drug = c[1] && c[1].v ? String(c[1].v) : "";
+          // A row recorded via the dropdown's "other" option carries the
+          // real name in its own column instead.
+          if (drug === OTHER_DRUG_OPTION && c[6] && c[6].v) drug = String(c[6].v);
           return {
             ts,
-            drug: c[1] && c[1].v ? String(c[1].v) : "",
+            drug,
             lot: c[2] && c[2].v ? String(c[2].v) : "",
             recorder: c[3] && c[3].v ? String(c[3].v) : "",
             qty: c[5] && c[5].v !== null && c[5].v !== undefined ? String(c[5].v) : ""
@@ -953,9 +1098,13 @@
         })
         .filter(r => r.ts && r.drug);
 
+      allRows = rows;
       lastLotByDrug = buildLastLotByDrug(rows);
+      qtyStatsByDrug = buildQtyStatsByDrug(rows);
       rows.forEach(r => { if (r.drug) knownDrugs.add(r.drug); });
       renderTodayHistory(rows);
+      renderSearch(searchInput.value);
+      checkQtyOutlier();
     } catch (err) {
       histState.hidden = false;
       histState.innerHTML = 'โหลดประวัติไม่สำเร็จ — ชีตอาจยังไม่ได้เปิดสิทธิ์ดูแบบ "ทุกคนที่มีลิงก์" <button type="button" class="hist-refresh" id="histRetry">ลองใหม่</button>';
