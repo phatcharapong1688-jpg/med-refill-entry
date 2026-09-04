@@ -190,10 +190,38 @@
     border-color: var(--focus);
   }
 
-  input[type="date"] { font-variant-numeric: tabular-nums; color-scheme: light; }
-  :root:not([data-theme="light"]) input[type="date"] { color-scheme: dark; }
-  :root[data-theme="dark"] input[type="date"] { color-scheme: dark; }
-  :root[data-theme="light"] input[type="date"] { color-scheme: light; }
+  /* Expiry date is entered as three plain fields (day / month / year-CE)
+     rather than <input type="date">: native date pickers on Thai-locale
+     devices render the Buddhist calendar (พ.ศ.) regardless of any lang
+     attribute, so this is the only reliable way to guarantee ค.ศ. */
+  .date-group {
+    display: grid;
+    grid-template-columns: 0.85fr 1.3fr 1fr;
+    gap: 8px;
+  }
+  .date-group input,
+  .date-group select {
+    font: inherit;
+    font-size: 1rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 11px 10px;
+    width: 100%;
+    min-width: 0;
+    transition: border-color 0.12s ease;
+  }
+  .date-group input:hover,
+  .date-group select:hover { border-color: var(--ink-faint); }
+  .date-group input:focus-visible,
+  .date-group select:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 1px;
+    border-color: var(--focus);
+  }
+  .date-group select { appearance: auto; }
 
   .prefix-group {
     display: flex;
@@ -454,8 +482,26 @@
       </div>
 
       <div class="field">
-        <label for="expiryInput">วันหมดอายุ <span class="req">*</span></label>
-        <input type="date" id="expiryInput" lang="en" required>
+        <label for="expiryDay">วันหมดอายุ (ค.ศ.) <span class="req">*</span></label>
+        <div class="date-group">
+          <input type="number" id="expiryDay" inputmode="numeric" min="1" max="31" placeholder="วว" required>
+          <select id="expiryMonth" required>
+            <option value="" disabled selected>เดือน</option>
+            <option value="1">ม.ค.</option>
+            <option value="2">ก.พ.</option>
+            <option value="3">มี.ค.</option>
+            <option value="4">เม.ย.</option>
+            <option value="5">พ.ค.</option>
+            <option value="6">มิ.ย.</option>
+            <option value="7">ก.ค.</option>
+            <option value="8">ส.ค.</option>
+            <option value="9">ก.ย.</option>
+            <option value="10">ต.ค.</option>
+            <option value="11">พ.ย.</option>
+            <option value="12">ธ.ค.</option>
+          </select>
+          <input type="number" id="expiryYear" inputmode="numeric" min="2020" max="2045" placeholder="ปี ค.ศ." required>
+        </div>
       </div>
 
       <div class="field">
@@ -539,7 +585,9 @@
   const lotInput = document.getElementById("lotInput");
   const lotHint = document.getElementById("lotHint");
   const qtyInput = document.getElementById("qtyInput");
-  const expiryInput = document.getElementById("expiryInput");
+  const expiryDay = document.getElementById("expiryDay");
+  const expiryMonth = document.getElementById("expiryMonth");
+  const expiryYear = document.getElementById("expiryYear");
   const recorderInput = document.getElementById("recorderInput");
   const form = document.getElementById("entryForm");
   const reviewBtn = document.getElementById("reviewBtn");
@@ -656,9 +704,22 @@
     statusEl.textContent = text;
   }
 
-  function fmtDateThai(iso) {
-    const [y, m, d] = iso.split("-");
-    return `${d}/${m}/${y}`;
+  // Reads the day/month/year-CE fields and confirms they form a real
+  // calendar date (rejects e.g. 30 Feb by checking the Date round-trips).
+  function getExpiryParts() {
+    const d = parseInt(expiryDay.value, 10);
+    const m = parseInt(expiryMonth.value, 10);
+    const y = parseInt(expiryYear.value, 10);
+    if (!d || !m || !y) return null;
+    const dt = new Date(y, m - 1, d);
+    if (dt.getFullYear() !== y || dt.getMonth() !== m - 1 || dt.getDate() !== d) return null;
+    return { d, m, y };
+  }
+
+  function fmtDateParts(parts) {
+    const dd = String(parts.d).padStart(2, "0");
+    const mm = String(parts.m).padStart(2, "0");
+    return `${dd}/${mm}/${parts.y}`;
   }
 
   form.addEventListener("submit", (e) => {
@@ -681,8 +742,10 @@
       qtyInput.focus();
       return;
     }
-    if (!expiryInput.value) {
-      showStatus("err", "กรุณาระบุวันหมดอายุ");
+    const expiryParts = getExpiryParts();
+    if (!expiryParts) {
+      showStatus("err", "กรุณาระบุวันหมดอายุให้ครบและถูกต้อง (วว/เดือน/ปี ค.ศ.)");
+      expiryDay.focus();
       return;
     }
     const recorderDigits = recorderInput.value.trim();
@@ -695,7 +758,7 @@
     document.getElementById("rvDrug").textContent = drugInput.value.trim();
     document.getElementById("rvLot").textContent = lotInput.value.trim();
     document.getElementById("rvQty").textContent = qty;
-    document.getElementById("rvExpiry").textContent = fmtDateThai(expiryInput.value);
+    document.getElementById("rvExpiry").textContent = fmtDateParts(expiryParts);
     document.getElementById("rvRecorder").textContent = "PH" + recorderDigits;
 
     form.hidden = true;
@@ -708,7 +771,7 @@
   });
 
   confirmBtn.addEventListener("click", () => {
-    const [year, month, day] = expiryInput.value.split("-");
+    const expiryParts = getExpiryParts();
     const recorderDigits = recorderInput.value.trim();
     const drugVal = drugInput.value.trim();
 
@@ -717,9 +780,9 @@
     body.set(ENTRY.lot, lotInput.value.trim());
     body.set(ENTRY.qty, qtyInput.value.trim());
     body.set(ENTRY.recorder, "PH" + recorderDigits);
-    body.set(ENTRY.expiryYear, year);
-    body.set(ENTRY.expiryMonth, String(Number(month)));
-    body.set(ENTRY.expiryDay, String(Number(day)));
+    body.set(ENTRY.expiryYear, String(expiryParts.y));
+    body.set(ENTRY.expiryMonth, String(expiryParts.m));
+    body.set(ENTRY.expiryDay, String(expiryParts.d));
 
     confirmBtn.disabled = true;
     backBtn.disabled = true;
@@ -759,7 +822,9 @@
       lotInput.classList.remove("suggested");
       lotHint.hidden = true;
       qtyInput.value = "";
-      expiryInput.value = "";
+      expiryDay.value = "";
+      expiryMonth.value = "";
+      expiryYear.value = "";
       drugInput.focus();
       loadData();
     }, 1200);
