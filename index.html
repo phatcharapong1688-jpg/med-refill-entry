@@ -228,6 +228,13 @@
   .prefix-group input:focus-visible { outline: none; }
 
   .hint { font-size: 0.75rem; color: var(--ink-faint); }
+  .hint-accent { color: var(--accent); font-weight: 500; }
+
+  input.suggested {
+    border-color: var(--accent-line);
+    background: var(--accent-soft);
+    font-weight: 600;
+  }
 
   .listbox {
     position: absolute;
@@ -438,6 +445,7 @@
         <div class="field">
           <label for="lotInput">เลขล็อต <span class="req">*</span></label>
           <input type="text" id="lotInput" placeholder="เช่น 2601520" required>
+          <div class="hint hint-accent" id="lotHint" hidden>เลขล็อตล่าสุดที่เคยบันทึกของยานี้ — ตรวจสอบกับกล่องจริงก่อนบันทึก</div>
         </div>
         <div class="field">
           <label for="qtyInput">จำนวน <span class="req">*</span></label>
@@ -529,6 +537,7 @@
   const drugInput = document.getElementById("drugInput");
   const drugList = document.getElementById("drugList");
   const lotInput = document.getElementById("lotInput");
+  const lotHint = document.getElementById("lotHint");
   const qtyInput = document.getElementById("qtyInput");
   const expiryInput = document.getElementById("expiryInput");
   const recorderInput = document.getElementById("recorderInput");
@@ -573,8 +582,26 @@
     drugInput.value = value;
     drugList.hidden = true;
     drugInput.setAttribute("aria-expanded", "false");
-    lotInput.focus();
+
+    const lastLot = lastLotByDrug[value];
+    if (lastLot) {
+      lotInput.value = lastLot;
+      lotInput.classList.add("suggested");
+      lotHint.hidden = false;
+      lotInput.focus();
+      lotInput.select();
+    } else {
+      lotInput.value = "";
+      lotInput.classList.remove("suggested");
+      lotHint.hidden = true;
+      lotInput.focus();
+    }
   }
+
+  lotInput.addEventListener("input", () => {
+    lotInput.classList.remove("suggested");
+    lotHint.hidden = true;
+  });
 
   drugInput.addEventListener("input", () => renderList(drugInput.value));
 
@@ -729,17 +756,22 @@
       showStatus("ok", `บันทึก "${drugVal}" เรียบร้อย`);
       drugInput.value = "";
       lotInput.value = "";
+      lotInput.classList.remove("suggested");
+      lotHint.hidden = true;
       qtyInput.value = "";
       expiryInput.value = "";
       drugInput.focus();
-      loadHistory();
+      loadData();
     }, 1200);
   });
 
-  // --- today's history, read live from the same Sheet the Form writes to ---
+  // --- live data from the same Sheet the Form writes to: today's history
+  // for the panel below, and the most recent lot number per drug for the
+  // autofill suggestion above ---
   const histState = document.getElementById("histState");
   const histList = document.getElementById("histList");
   const histCount = document.getElementById("histCount");
+  let lastLotByDrug = {};
 
   function parseGvizDate(v) {
     // gviz encodes datetime cells as the literal string "Date(Y,M,D,h,m,s)"
@@ -754,7 +786,50 @@
     return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
   }
 
-  async function loadHistory() {
+  function renderTodayHistory(rows) {
+    const today = new Date();
+    const todayRows = rows.filter(r => sameDay(r.ts, today)).sort((a, b) => b.ts - a.ts);
+
+    histCount.textContent = todayRows.length > 0 ? `${todayRows.length} รายการ` : "";
+
+    if (todayRows.length === 0) {
+      histState.hidden = false;
+      histState.textContent = "ยังไม่มีรายการบันทึกวันนี้";
+      histList.hidden = true;
+      return;
+    }
+
+    histList.innerHTML = todayRows.map(r => {
+      const time = r.ts.toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
+      const metaParts = [r.lot, r.qty ? `จำนวน ${r.qty}` : "", r.recorder].filter(Boolean);
+      return `
+        <div class="hist-item">
+          <span class="hist-dot"></span>
+          <div class="hist-main">
+            <div class="hist-drug">${escapeHtml(r.drug)}</div>
+            <div class="hist-meta">${escapeHtml(metaParts.join(" · "))}</div>
+          </div>
+          <span class="hist-time">${escapeHtml(time)}</span>
+        </div>`;
+    }).join("");
+    histState.hidden = true;
+    histList.hidden = false;
+  }
+
+  function buildLastLotByDrug(rows) {
+    const map = {};
+    // rows are not guaranteed sorted; keep whichever has the latest ts per drug
+    for (const r of rows) {
+      if (!r.drug || !r.lot) continue;
+      const prev = map[r.drug];
+      if (!prev || r.ts > prev.ts) map[r.drug] = { lot: r.lot, ts: r.ts };
+    }
+    const result = {};
+    for (const drug in map) result[drug] = map[drug].lot;
+    return result;
+  }
+
+  async function loadData() {
     histState.hidden = false;
     histState.textContent = "กำลังโหลด…";
     histList.hidden = true;
@@ -768,7 +843,6 @@
       const data = JSON.parse(match[1]);
       if (data.status === "error") throw new Error("query error");
 
-      const today = new Date();
       const rows = (data.table.rows || [])
         .map(r => {
           const c = r.c || [];
@@ -781,41 +855,18 @@
             qty: c[5] && c[5].v !== null && c[5].v !== undefined ? String(c[5].v) : ""
           };
         })
-        .filter(r => r.ts && r.drug && sameDay(r.ts, today))
-        .sort((a, b) => b.ts - a.ts);
+        .filter(r => r.ts && r.drug);
 
-      histCount.textContent = rows.length > 0 ? `${rows.length} รายการ` : "";
-
-      if (rows.length === 0) {
-        histState.hidden = false;
-        histState.textContent = "ยังไม่มีรายการบันทึกวันนี้";
-        histList.hidden = true;
-        return;
-      }
-
-      histList.innerHTML = rows.map(r => {
-        const time = r.ts.toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
-        const metaParts = [r.lot, r.qty ? `จำนวน ${r.qty}` : "", r.recorder].filter(Boolean);
-        return `
-          <div class="hist-item">
-            <span class="hist-dot"></span>
-            <div class="hist-main">
-              <div class="hist-drug">${escapeHtml(r.drug)}</div>
-              <div class="hist-meta">${escapeHtml(metaParts.join(" · "))}</div>
-            </div>
-            <span class="hist-time">${escapeHtml(time)}</span>
-          </div>`;
-      }).join("");
-      histState.hidden = true;
-      histList.hidden = false;
+      lastLotByDrug = buildLastLotByDrug(rows);
+      renderTodayHistory(rows);
     } catch (err) {
       histState.hidden = false;
       histState.innerHTML = 'โหลดประวัติไม่สำเร็จ — ชีตอาจยังไม่ได้เปิดสิทธิ์ดูแบบ "ทุกคนที่มีลิงก์" <button type="button" class="hist-refresh" id="histRetry">ลองใหม่</button>';
       histList.hidden = true;
       const retry = document.getElementById("histRetry");
-      if (retry) retry.addEventListener("click", loadHistory);
+      if (retry) retry.addEventListener("click", loadData);
     }
   }
 
-  loadHistory();
+  loadData();
 </script>
