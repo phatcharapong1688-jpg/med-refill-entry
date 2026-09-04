@@ -5,55 +5,61 @@
 
 <style>
   :root {
-    --bg: #F3F1E8;
+    --bg: #EBF1F5;
     --surface: #FFFFFF;
-    --ink: #1E2621;
-    --ink-soft: #57635C;
-    --ink-faint: #8A9389;
-    --accent: #2F6F5E;
-    --accent-ink: #F5FBF8;
-    --accent-soft: #E1EEE7;
-    --accent-line: #BFDBD0;
-    --line: #DAD3C2;
-    --line-soft: #EAE5D8;
-    --focus: #2F6F5E;
+    --ink: #1A2733;
+    --ink-soft: #51697A;
+    --ink-faint: #8CA2B0;
+    --accent: #2E6B93;
+    --accent-ink: #F4FAFD;
+    --accent-soft: #E1EDF4;
+    --accent-line: #B9D5E3;
+    --line: #D3E0E8;
+    --line-soft: #E7EEF2;
+    --focus: #2E6B93;
     --danger: #B3432E;
     --danger-soft: #F6E4DF;
+    --good: #2E8B67;
+    --good-soft: #E1F1E8;
   }
 
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --bg: #10160F;
-      --surface: #171F19;
-      --ink: #ECEFE9;
-      --ink-soft: #A6B0A6;
-      --ink-faint: #6E786F;
-      --accent: #6FBBA0;
-      --accent-ink: #0D1512;
-      --accent-soft: #1C2B24;
-      --accent-line: #2E4A3E;
-      --line: #2B352E;
-      --line-soft: #212B24;
-      --focus: #6FBBA0;
+      --bg: #0D161D;
+      --surface: #15222B;
+      --ink: #E7EEF3;
+      --ink-soft: #96ACBB;
+      --ink-faint: #5C7382;
+      --accent: #74B7DC;
+      --accent-ink: #07141B;
+      --accent-soft: #1B2E3A;
+      --accent-line: #2C4C5E;
+      --line: #23333D;
+      --line-soft: #1B2932;
+      --focus: #74B7DC;
       --danger: #E08A70;
       --danger-soft: #2B1D18;
+      --good: #6FCB9F;
+      --good-soft: #15281F;
     }
   }
   :root[data-theme="dark"] {
-    --bg: #10160F;
-    --surface: #171F19;
-    --ink: #ECEFE9;
-    --ink-soft: #A6B0A6;
-    --ink-faint: #6E786F;
-    --accent: #6FBBA0;
-    --accent-ink: #0D1512;
-    --accent-soft: #1C2B24;
-    --accent-line: #2E4A3E;
-    --line: #2B352E;
-    --line-soft: #212B24;
-    --focus: #6FBBA0;
+    --bg: #0D161D;
+    --surface: #15222B;
+    --ink: #E7EEF3;
+    --ink-soft: #96ACBB;
+    --ink-faint: #5C7382;
+    --accent: #74B7DC;
+    --accent-ink: #07141B;
+    --accent-soft: #1B2E3A;
+    --accent-line: #2C4C5E;
+    --line: #23333D;
+    --line-soft: #1B2932;
+    --focus: #74B7DC;
     --danger: #E08A70;
     --danger-soft: #2B1D18;
+    --good: #6FCB9F;
+    --good-soft: #15281F;
   }
 
   * { box-sizing: border-box; }
@@ -73,34 +79,35 @@
     width: min(480px, 100%);
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 22px;
   }
 
   header {
     display: flex;
     align-items: center;
-    gap: 14px;
-    padding: 4px 2px 2px;
+    gap: 13px;
+    padding: 2px 2px 0;
   }
 
   .badge {
     flex: none;
-    width: 44px;
-    height: 44px;
-    border-radius: 12px;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
     background: var(--accent-soft);
+    border: 1px solid var(--accent-line);
     display: flex;
     align-items: center;
     justify-content: center;
   }
-  .badge svg { width: 24px; height: 24px; stroke: var(--accent); }
+  .badge svg { width: 21px; height: 21px; stroke: var(--accent); }
 
-  .heading-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .heading-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 
   .eyebrow {
-    font-size: 0.7rem;
+    font-size: 0.68rem;
     font-weight: 600;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.11em;
     text-transform: uppercase;
     color: var(--accent);
   }
@@ -109,20 +116,23 @@
     margin: 0;
     font-family: "Chonburi", "IBM Plex Sans Thai", serif;
     font-weight: 400;
-    font-size: clamp(1.4rem, 5.5vw, 1.7rem);
-    line-height: 1.2;
+    font-size: clamp(1.35rem, 5vw, 1.6rem);
+    line-height: 1.15;
     text-wrap: balance;
   }
 
-  form {
+  section.card {
     background: var(--surface);
     border: 1px solid var(--line);
-    border-radius: 20px;
-    padding: clamp(20px, 5vw, 30px);
+    border-radius: 18px;
+    padding: clamp(20px, 5vw, 28px);
+    box-shadow: 0 1px 2px rgba(20, 34, 43, 0.04), 0 12px 32px -20px rgba(20, 34, 43, 0.22);
+  }
+
+  form {
     display: flex;
     flex-direction: column;
-    gap: 20px;
-    box-shadow: 0 1px 2px rgba(20, 24, 20, 0.04), 0 14px 36px -20px rgba(20, 24, 20, 0.22);
+    gap: 19px;
   }
 
   .row {
@@ -140,7 +150,7 @@
   }
 
   label {
-    font-size: 0.82rem;
+    font-size: 0.8rem;
     font-weight: 600;
     color: var(--ink-soft);
   }
@@ -155,8 +165,8 @@
     color: var(--ink);
     background: var(--bg);
     border: 1px solid var(--line);
-    border-radius: 11px;
-    padding: 12px 14px;
+    border-radius: 10px;
+    padding: 11px 13px;
     width: 100%;
     min-width: 0;
     transition: border-color 0.12s ease;
@@ -177,19 +187,15 @@
     border-color: var(--focus);
   }
 
-  input[type="date"] {
-    font-variant-numeric: tabular-nums;
-    color-scheme: light;
-  }
+  input[type="date"] { font-variant-numeric: tabular-nums; color-scheme: light; }
   :root:not([data-theme="light"]) input[type="date"] { color-scheme: dark; }
   :root[data-theme="dark"] input[type="date"] { color-scheme: dark; }
   :root[data-theme="light"] input[type="date"] { color-scheme: light; }
 
-  /* fixed "PH" prefix so the recorder code can never be entered without it */
   .prefix-group {
     display: flex;
     border: 1px solid var(--line);
-    border-radius: 11px;
+    border-radius: 10px;
     overflow: hidden;
     background: var(--bg);
   }
@@ -218,10 +224,7 @@
   }
   .prefix-group input:focus-visible { outline: none; }
 
-  .hint {
-    font-size: 0.76rem;
-    color: var(--ink-faint);
-  }
+  .hint { font-size: 0.75rem; color: var(--ink-faint); }
 
   .listbox {
     position: absolute;
@@ -233,43 +236,21 @@
     background: var(--surface);
     border: 1px solid var(--line);
     border-radius: 12px;
-    box-shadow: 0 8px 24px -8px rgba(20, 24, 20, 0.28);
+    box-shadow: 0 8px 24px -8px rgba(20, 34, 43, 0.28);
     z-index: 5;
     padding: 6px;
   }
   .listbox[hidden] { display: none; }
 
-  .option {
-    padding: 9px 10px;
-    border-radius: 8px;
-    font-size: 0.92rem;
-    cursor: pointer;
-  }
-  .option mark {
-    background: var(--accent-soft);
-    color: var(--accent);
-    border-radius: 3px;
-    font-weight: 600;
-  }
-  .option:hover,
-  .option[aria-selected="true"] {
-    background: var(--accent-soft);
-  }
+  .option { padding: 9px 10px; border-radius: 8px; font-size: 0.92rem; cursor: pointer; }
+  .option mark { background: var(--accent-soft); color: var(--accent); border-radius: 3px; font-weight: 600; }
+  .option:hover, .option[aria-selected="true"] { background: var(--accent-soft); }
 
-  .empty {
-    padding: 10px;
-    font-size: 0.86rem;
-    color: var(--ink-soft);
-  }
+  .empty { padding: 10px; font-size: 0.86rem; color: var(--ink-soft); }
 
-  hr.div {
-    border: none;
-    height: 1px;
-    background: var(--line-soft);
-    margin: 0;
-  }
+  hr.div { border: none; height: 1px; background: var(--line-soft); margin: 0; }
 
-  button.submit {
+  button.primary {
     font: inherit;
     font-weight: 700;
     font-size: 1rem;
@@ -285,13 +266,26 @@
     gap: 8px;
     transition: opacity 0.15s ease, transform 0.1s ease;
   }
-  button.submit:hover { opacity: 0.92; }
-  button.submit:active { transform: scale(0.99); }
-  button.submit:disabled { opacity: 0.55; cursor: wait; }
-  button.submit:focus-visible {
-    outline: 2px solid var(--focus);
-    outline-offset: 2px;
+  button.primary:hover { opacity: 0.92; }
+  button.primary:active { transform: scale(0.99); }
+  button.primary:disabled { opacity: 0.55; cursor: wait; }
+  button.primary:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+  button.secondary {
+    font: inherit;
+    font-weight: 600;
+    font-size: 0.92rem;
+    color: var(--ink-soft);
+    background: transparent;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 13px;
+    cursor: pointer;
   }
+  button.secondary:hover { background: var(--bg); color: var(--ink); }
+  button.secondary:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+  .actions-row { display: grid; grid-template-columns: 1fr 1.4fr; gap: 10px; }
 
   .status {
     display: flex;
@@ -302,29 +296,112 @@
     border-radius: 10px;
     padding: 11px 12px;
   }
-  .status.ok {
-    background: var(--accent-soft);
-    color: var(--accent);
-  }
-  .status.err {
-    background: var(--danger-soft);
-    color: var(--danger);
-  }
+  .status.ok { background: var(--accent-soft); color: var(--accent); }
+  .status.err { background: var(--danger-soft); color: var(--danger); }
   .status[hidden] { display: none; }
 
-  footer {
-    text-align: center;
+  /* --- review step --- */
+  .review { display: flex; flex-direction: column; gap: 4px; }
+  .review-title {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 10px;
+  }
+  .review-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 11px 0;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .review-row:last-of-type { border-bottom: none; }
+  .review-k { font-size: 0.85rem; color: var(--ink-soft); flex: none; }
+  .review-v {
+    font-size: 0.92rem;
+    font-weight: 600;
+    text-align: right;
+    color: var(--ink);
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+  }
+  [hidden] { display: none !important; }
+
+  /* --- history --- */
+  .hist-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .hist-title { font-size: 0.98rem; font-weight: 700; color: var(--ink); }
+  .hist-count {
     font-size: 0.76rem;
+    color: var(--ink-soft);
+    font-variant-numeric: tabular-nums;
+  }
+  .hist-list { display: flex; flex-direction: column; gap: 2px; }
+  .hist-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 0;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .hist-item:last-child { border-bottom: none; }
+  .hist-dot {
+    flex: none;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--good);
+  }
+  .hist-main { flex: 1; min-width: 0; }
+  .hist-drug {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--ink);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .hist-meta {
+    font-size: 0.76rem;
+    color: var(--ink-soft);
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    margin-top: 1px;
+  }
+  .hist-time {
+    flex: none;
+    font-size: 0.78rem;
     color: var(--ink-faint);
-    padding: 4px;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+  .hist-state {
+    font-size: 0.84rem;
+    color: var(--ink-faint);
+    padding: 4px 0;
+  }
+  .hist-refresh {
+    font-size: 0.76rem;
+    color: var(--accent);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    text-decoration: underline;
+    text-underline-offset: 2px;
   }
 
-  @media (max-width: 380px) {
-    .row { grid-template-columns: 1fr; }
-  }
+  footer { text-align: center; font-size: 0.75rem; color: var(--ink-faint); padding: 2px; }
+
+  @media (max-width: 380px) { .row { grid-template-columns: 1fr; } }
 
   @media (prefers-reduced-motion: no-preference) {
-    form { animation: rise 0.4s ease-out; }
+    section.card { animation: rise 0.4s ease-out; }
     @keyframes rise {
       from { opacity: 0; transform: translateY(6px); }
       to { opacity: 1; transform: translateY(0); }
@@ -335,7 +412,7 @@
 <main>
   <header>
     <div class="badge">
-      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 20.5 3.5 13.5a4.95 4.95 0 1 1 7-7l7 7a4.95 4.95 0 1 1-7 7Z"/><path d="m8.5 8.5 7 7"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11.5 11.5 14 16 9"/><rect x="3.5" y="3.5" width="17" height="17" rx="5"/></svg>
     </div>
     <div class="heading-text">
       <div class="eyebrow">แบบบันทึกสำหรับเจ้าหน้าที่</div>
@@ -343,44 +420,71 @@
     </div>
   </header>
 
-  <form id="entryForm" autocomplete="off">
-    <div class="field">
-      <label for="drugInput">ชื่อยา <span class="req">*</span></label>
-      <input type="text" id="drugInput" role="combobox" aria-expanded="false" aria-controls="drugList" aria-autocomplete="list" placeholder="พิมพ์ 1-2 ตัวอักษร เช่น amlo, warfa" required>
-      <div class="hint">พิมพ์ชื่อยาบางส่วนเพื่อค้นหา แล้วเลือกจากรายการ</div>
-      <div class="listbox" id="drugList" role="listbox" hidden></div>
-    </div>
-
-    <hr class="div">
-
-    <div class="row">
+  <section class="card">
+    <form id="entryForm" autocomplete="off">
       <div class="field">
-        <label for="lotInput">เลขล็อต <span class="req">*</span></label>
-        <input type="text" id="lotInput" placeholder="เช่น 2601520" required>
+        <label for="drugInput">ชื่อยา <span class="req">*</span></label>
+        <input type="text" id="drugInput" role="combobox" aria-expanded="false" aria-controls="drugList" aria-autocomplete="list" placeholder="พิมพ์ 1-2 ตัวอักษร เช่น amlo, warfa" required>
+        <div class="hint">พิมพ์ชื่อยาบางส่วนเพื่อค้นหา แล้วเลือกจากรายการ</div>
+        <div class="listbox" id="drugList" role="listbox" hidden></div>
       </div>
+
+      <hr class="div">
+
+      <div class="row">
+        <div class="field">
+          <label for="lotInput">เลขล็อต <span class="req">*</span></label>
+          <input type="text" id="lotInput" placeholder="เช่น 2601520" required>
+        </div>
+        <div class="field">
+          <label for="qtyInput">จำนวน <span class="req">*</span></label>
+          <input type="number" id="qtyInput" inputmode="numeric" min="1" step="1" placeholder="0" required>
+        </div>
+      </div>
+
       <div class="field">
-        <label for="qtyInput">จำนวน <span class="req">*</span></label>
-        <input type="number" id="qtyInput" inputmode="numeric" min="1" step="1" placeholder="0" required>
+        <label for="expiryInput">วันหมดอายุ <span class="req">*</span></label>
+        <input type="date" id="expiryInput" required>
+      </div>
+
+      <div class="field">
+        <label for="recorderInput">ผู้บันทึก <span class="req">*</span></label>
+        <div class="prefix-group">
+          <span class="prefix-tag">PH</span>
+          <input type="text" id="recorderInput" inputmode="numeric" placeholder="0001" aria-label="รหัสผู้บันทึกต่อจาก PH" required>
+        </div>
+        <div class="hint">กรอกเฉพาะตัวเลขต่อจาก PH เช่น พิมพ์ 0001 สำหรับรหัส PH0001</div>
+      </div>
+
+      <button type="submit" class="primary" id="reviewBtn">ตรวจสอบก่อนบันทึก</button>
+    </form>
+
+    <div class="review" id="reviewPanel" hidden>
+      <div class="review-title">ตรวจสอบข้อมูลก่อนบันทึก</div>
+      <div class="review-row"><span class="review-k">ชื่อยา</span><span class="review-v" id="rvDrug"></span></div>
+      <div class="review-row"><span class="review-k">เลขล็อต</span><span class="review-v" id="rvLot"></span></div>
+      <div class="review-row"><span class="review-k">จำนวน</span><span class="review-v" id="rvQty"></span></div>
+      <div class="review-row"><span class="review-k">วันหมดอายุ</span><span class="review-v" id="rvExpiry"></span></div>
+      <div class="review-row"><span class="review-k">ผู้บันทึก</span><span class="review-v" id="rvRecorder"></span></div>
+      <div class="actions-row" style="margin-top: 16px;">
+        <button type="button" class="secondary" id="backBtn">แก้ไข</button>
+        <button type="button" class="primary" id="confirmBtn">ยืนยันบันทึก</button>
       </div>
     </div>
 
-    <div class="field">
-      <label for="expiryInput">วันหมดอายุ <span class="req">*</span></label>
-      <input type="date" id="expiryInput" required>
-    </div>
-
-    <div class="field">
-      <label for="recorderInput">ผู้บันทึก <span class="req">*</span></label>
-      <div class="prefix-group">
-        <span class="prefix-tag">PH</span>
-        <input type="text" id="recorderInput" inputmode="numeric" placeholder="2012" aria-label="รหัสผู้บันทึกต่อจาก PH" required>
-      </div>
-      <div class="hint">กรอกเฉพาะตัวเลขต่อจาก PH เช่น พิมพ์ 2012 สำหรับรหัส PH2012</div>
-    </div>
-
-    <button type="submit" class="submit" id="submitBtn">บันทึกข้อมูล</button>
     <div class="status" id="status" role="status" hidden></div>
-  </form>
+  </section>
+
+  <section class="card">
+    <div class="hist-head">
+      <span class="hist-title">ประวัติวันนี้</span>
+      <span class="hist-count" id="histCount"></span>
+    </div>
+    <div id="histBody">
+      <div class="hist-state" id="histState">กำลังโหลด…</div>
+      <div class="hist-list" id="histList" hidden></div>
+    </div>
+  </section>
 
   <footer>ข้อมูลถูกส่งเข้า Google ชีตชุดเดียวกับแบบฟอร์มเดิม</footer>
 </main>
@@ -407,6 +511,8 @@
   ];
 
   const FORM_ACTION = "https://docs.google.com/forms/d/e/1FAIpQLSf852tiF0uwwlC4l8hJ7OCa2HPaXyMLxJR02T_E78uindY2AA/formResponse";
+  const SHEET_ID = "197v-eXqAF6c-uR6OR2widnehgLvCkd1sKJaDmwCSuOI";
+  const SHEET_TAB = "Form Responses 1";
   const ENTRY = {
     drug: "entry.392800974",
     qty: "entry.1713042749",
@@ -424,7 +530,10 @@
   const expiryInput = document.getElementById("expiryInput");
   const recorderInput = document.getElementById("recorderInput");
   const form = document.getElementById("entryForm");
-  const submitBtn = document.getElementById("submitBtn");
+  const reviewBtn = document.getElementById("reviewBtn");
+  const reviewPanel = document.getElementById("reviewPanel");
+  const backBtn = document.getElementById("backBtn");
+  const confirmBtn = document.getElementById("confirmBtn");
   const statusEl = document.getElementById("status");
 
   let activeIndex = -1;
@@ -436,9 +545,7 @@
 
   function renderList(query) {
     const q = query.trim().toLowerCase();
-    currentMatches = q === ""
-      ? []
-      : DRUGS.filter(d => d.toLowerCase().includes(q)).slice(0, 8);
+    currentMatches = q === "" ? [] : DRUGS.filter(d => d.toLowerCase().includes(q)).slice(0, 8);
     activeIndex = -1;
 
     if (currentMatches.length === 0) {
@@ -489,9 +596,7 @@
   });
 
   function updateActive() {
-    [...drugList.children].forEach((el, i) => {
-      el.setAttribute("aria-selected", i === activeIndex ? "true" : "false");
-    });
+    [...drugList.children].forEach((el, i) => el.setAttribute("aria-selected", i === activeIndex ? "true" : "false"));
     const el = drugList.children[activeIndex];
     if (el) el.scrollIntoView({ block: "nearest" });
   }
@@ -505,7 +610,6 @@
     if (!e.target.closest(".field")) drugList.hidden = true;
   });
 
-  // recorder code: only digits are ever allowed after the fixed "PH" tag
   recorderInput.addEventListener("input", () => {
     const digits = recorderInput.value.replace(/\D/g, "");
     if (digits !== recorderInput.value) recorderInput.value = digits;
@@ -522,8 +626,14 @@
     statusEl.textContent = text;
   }
 
-  form.addEventListener("submit", async (e) => {
+  function fmtDateThai(iso) {
+    const [y, m, d] = iso.split("-");
+    return `${d}/${m}/${y}`;
+  }
+
+  form.addEventListener("submit", (e) => {
     e.preventDefault();
+    statusEl.hidden = true;
 
     if (!DRUGS.includes(drugInput.value.trim())) {
       showStatus("err", "กรุณาเลือกชื่อยาจากรายการค้นหา");
@@ -552,24 +662,42 @@
       return;
     }
 
+    document.getElementById("rvDrug").textContent = drugInput.value.trim();
+    document.getElementById("rvLot").textContent = lotInput.value.trim();
+    document.getElementById("rvQty").textContent = qty;
+    document.getElementById("rvExpiry").textContent = fmtDateThai(expiryInput.value);
+    document.getElementById("rvRecorder").textContent = "PH" + recorderDigits;
+
+    form.hidden = true;
+    reviewPanel.hidden = false;
+  });
+
+  backBtn.addEventListener("click", () => {
+    reviewPanel.hidden = true;
+    form.hidden = false;
+  });
+
+  confirmBtn.addEventListener("click", () => {
     const [year, month, day] = expiryInput.value.split("-");
+    const recorderDigits = recorderInput.value.trim();
+    const drugVal = drugInput.value.trim();
 
     const body = new URLSearchParams();
-    body.set(ENTRY.drug, drugInput.value.trim());
+    body.set(ENTRY.drug, drugVal);
     body.set(ENTRY.lot, lotInput.value.trim());
-    body.set(ENTRY.qty, qty);
+    body.set(ENTRY.qty, qtyInput.value.trim());
     body.set(ENTRY.recorder, "PH" + recorderDigits);
     body.set(ENTRY.expiryYear, year);
     body.set(ENTRY.expiryMonth, String(Number(month)));
     body.set(ENTRY.expiryDay, String(Number(day)));
 
-    submitBtn.disabled = true;
-    submitBtn.textContent = "กำลังบันทึก...";
-    statusEl.hidden = true;
+    confirmBtn.disabled = true;
+    backBtn.disabled = true;
+    confirmBtn.textContent = "กำลังบันทึก...";
 
     // Submitted via a real <form> POST targeting a hidden iframe rather than
-    // fetch(): the sandbox's connect-src blocks cross-origin fetch/XHR, but
-    // a genuine form navigation is governed by form-action and goes through.
+    // fetch(): a genuine form navigation is governed by form-action and goes
+    // through even where cross-origin fetch/XHR would be blocked.
     const tempForm = document.createElement("form");
     tempForm.method = "POST";
     tempForm.action = FORM_ACTION;
@@ -584,22 +712,107 @@
     }
     document.body.appendChild(tempForm);
 
-    try {
-      localStorage.setItem("refill_recorder_digits", recorderDigits);
-    } catch {}
+    try { localStorage.setItem("refill_recorder_digits", recorderDigits); } catch {}
 
     tempForm.submit();
 
     setTimeout(() => {
       tempForm.remove();
-      submitBtn.disabled = false;
-      submitBtn.textContent = "บันทึกข้อมูล";
-      showStatus("ok", `บันทึก "${drugInput.value.trim()}" เรียบร้อย`);
+      confirmBtn.disabled = false;
+      backBtn.disabled = false;
+      confirmBtn.textContent = "ยืนยันบันทึก";
+      reviewPanel.hidden = true;
+      form.hidden = false;
+      showStatus("ok", `บันทึก "${drugVal}" เรียบร้อย`);
       drugInput.value = "";
       lotInput.value = "";
       qtyInput.value = "";
       expiryInput.value = "";
       drugInput.focus();
+      loadHistory();
     }, 1200);
   });
+
+  // --- today's history, read live from the same Sheet the Form writes to ---
+  const histState = document.getElementById("histState");
+  const histList = document.getElementById("histList");
+  const histCount = document.getElementById("histCount");
+
+  function parseGvizDate(v) {
+    // gviz encodes datetime cells as the literal string "Date(Y,M,D,h,m,s)"
+    // with a zero-indexed month, matching the JS Date constructor.
+    const m = /^Date\((\d+),(\d+),(\d+)(?:,(\d+),(\d+),(\d+))?\)$/.exec(v || "");
+    if (!m) return null;
+    const [, y, mo, d, h = 0, mi = 0, s = 0] = m.map(Number);
+    return new Date(y, mo, d, h, mi, s);
+  }
+
+  function sameDay(a, b) {
+    return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+  }
+
+  async function loadHistory() {
+    histState.hidden = false;
+    histState.textContent = "กำลังโหลด…";
+    histList.hidden = true;
+
+    try {
+      const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(SHEET_TAB)}`;
+      const res = await fetch(url);
+      const text = await res.text();
+      const match = /setResponse\((.*)\);?\s*$/s.exec(text.trim());
+      if (!match) throw new Error("unexpected response");
+      const data = JSON.parse(match[1]);
+      if (data.status === "error") throw new Error("query error");
+
+      const today = new Date();
+      const rows = (data.table.rows || [])
+        .map(r => {
+          const c = r.c || [];
+          const ts = c[0] && c[0].v ? parseGvizDate(c[0].v) : null;
+          return {
+            ts,
+            drug: c[1] && c[1].v ? String(c[1].v) : "",
+            lot: c[2] && c[2].v ? String(c[2].v) : "",
+            recorder: c[3] && c[3].v ? String(c[3].v) : "",
+            qty: c[5] && c[5].v !== null && c[5].v !== undefined ? String(c[5].v) : ""
+          };
+        })
+        .filter(r => r.ts && r.drug && sameDay(r.ts, today))
+        .sort((a, b) => b.ts - a.ts);
+
+      histCount.textContent = rows.length > 0 ? `${rows.length} รายการ` : "";
+
+      if (rows.length === 0) {
+        histState.hidden = false;
+        histState.textContent = "ยังไม่มีรายการบันทึกวันนี้";
+        histList.hidden = true;
+        return;
+      }
+
+      histList.innerHTML = rows.map(r => {
+        const time = r.ts.toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
+        const metaParts = [r.lot, r.qty ? `จำนวน ${r.qty}` : "", r.recorder].filter(Boolean);
+        return `
+          <div class="hist-item">
+            <span class="hist-dot"></span>
+            <div class="hist-main">
+              <div class="hist-drug">${escapeHtml(r.drug)}</div>
+              <div class="hist-meta">${escapeHtml(metaParts.join(" · "))}</div>
+            </div>
+            <span class="hist-time">${escapeHtml(time)}</span>
+          </div>`;
+      }).join("");
+      histState.hidden = true;
+      histList.hidden = false;
+    } catch (err) {
+      histState.hidden = false;
+      histState.innerHTML = 'โหลดประวัติไม่สำเร็จ — ชีตอาจยังไม่ได้เปิดสิทธิ์ดูแบบ "ทุกคนที่มีลิงก์" <button type="button" class="hist-refresh" id="histRetry">ลองใหม่</button>';
+      histList.hidden = true;
+      const retry = document.getElementById("histRetry");
+      if (retry) retry.addEventListener("click", loadHistory);
+    }
+  }
+
+  loadHistory();
 </script>
