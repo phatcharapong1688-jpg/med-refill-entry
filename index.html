@@ -524,6 +524,7 @@
           </select>
           <input type="number" id="expiryYear" inputmode="numeric" min="2020" max="2045" placeholder="ปี ค.ศ." required>
         </div>
+        <div class="hint hint-warn" id="expiryHint" hidden></div>
       </div>
 
       <div class="field">
@@ -634,6 +635,7 @@
   const expiryDay = document.getElementById("expiryDay");
   const expiryMonth = document.getElementById("expiryMonth");
   const expiryYear = document.getElementById("expiryYear");
+  const expiryHint = document.getElementById("expiryHint");
   const recorderInput = document.getElementById("recorderInput");
   const form = document.getElementById("entryForm");
   const reviewBtn = document.getElementById("reviewBtn");
@@ -649,6 +651,43 @@
     return s.replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
   }
 
+  function levenshtein(a, b) {
+    const m = a.length, n = b.length;
+    const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+    for (let i = 0; i <= m; i++) dp[i][0] = i;
+    for (let j = 0; j <= n; j++) dp[0][j] = j;
+    for (let i = 1; i <= m; i++) {
+      for (let j = 1; j <= n; j++) {
+        dp[i][j] = a[i - 1] === b[j - 1]
+          ? dp[i - 1][j - 1]
+          : 1 + Math.min(dp[i - 1][j - 1], dp[i - 1][j], dp[i][j - 1]);
+      }
+    }
+    return dp[m][n];
+  }
+
+  // Catches near-duplicates before a typo or formatting slip (extra space,
+  // different casing) creates a second entry for a drug that already exists,
+  // which would silently split its history in two.
+  function findSimilarDrug(name) {
+    const norm = name.toLowerCase().replace(/\s+/g, "");
+    if (!norm) return null;
+    for (const d of knownDrugs) {
+      if (d.toLowerCase().replace(/\s+/g, "") === norm) return d;
+    }
+    let best = null, bestDist = Infinity;
+    for (const d of knownDrugs) {
+      const dNorm = d.toLowerCase().replace(/\s+/g, "");
+      const threshold = Math.max(2, Math.floor(dNorm.length * 0.15));
+      const dist = levenshtein(norm, dNorm);
+      if (dist <= threshold && dist < bestDist) {
+        best = d;
+        bestDist = dist;
+      }
+    }
+    return best;
+  }
+
   function renderList(query) {
     const q = query.trim().toLowerCase();
     currentMatches = q === "" ? [] : [...knownDrugs].filter(d => d.toLowerCase().includes(q)).slice(0, 8);
@@ -662,7 +701,11 @@
         return;
       }
       const typed = query.trim();
-      drugList.innerHTML = `<div class="option option-add" role="option" data-new="${escapeHtml(typed)}">+ เพิ่ม "${escapeHtml(typed)}" เป็นยาใหม่</div>`;
+      const similar = findSimilarDrug(typed);
+      const similarWarning = similar
+        ? `<div class="empty" style="color: var(--danger);">อาจซ้ำกับ "${escapeHtml(similar)}" ที่มีอยู่แล้ว — ตรวจสอบก่อนเพิ่มเป็นยาใหม่</div>`
+        : "";
+      drugList.innerHTML = `<div class="option option-add" role="option" data-new="${escapeHtml(typed)}">+ เพิ่ม "${escapeHtml(typed)}" เป็นยาใหม่</div>${similarWarning}`;
       drugList.hidden = false;
       drugInput.setAttribute("aria-expanded", "true");
       return;
@@ -812,6 +855,30 @@
     return `${dd}/${mm}/${parts.y}`;
   }
 
+  // Non-blocking warning only: a pharmacist may legitimately be logging
+  // already-expired stock (e.g. pulling it for disposal) or backfilling an
+  // old record, so this hints rather than prevents submission.
+  function checkExpiryPast() {
+    const parts = getExpiryParts();
+    if (!parts) {
+      expiryHint.hidden = true;
+      return;
+    }
+    const expiry = new Date(parts.y, parts.m - 1, parts.d);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (expiry < today) {
+      expiryHint.hidden = false;
+      expiryHint.textContent = "วันหมดอายุนี้ผ่านมาแล้ว — ตรวจสอบวัน/เดือน/ปีอีกครั้ง";
+    } else {
+      expiryHint.hidden = true;
+    }
+  }
+
+  expiryDay.addEventListener("input", checkExpiryPast);
+  expiryMonth.addEventListener("change", checkExpiryPast);
+  expiryYear.addEventListener("input", checkExpiryPast);
+
   form.addEventListener("submit", (e) => {
     e.preventDefault();
     statusEl.hidden = true;
@@ -860,7 +927,16 @@
     form.hidden = false;
   });
 
+  // Guards against a double-submit: relying on confirmBtn.disabled alone is
+  // not enough — on some touchscreens both taps of a fast double-tap can
+  // already be queued as click events before the first handler runs and
+  // sets disabled, so this flag is checked synchronously before anything
+  // else happens.
+  let isSubmitting = false;
+
   confirmBtn.addEventListener("click", () => {
+    if (isSubmitting) return;
+    isSubmitting = true;
     const expiryParts = getExpiryParts();
     const recorderDigits = recorderInput.value.trim();
     const drugVal = drugInput.value.trim();
@@ -908,6 +984,7 @@
 
     setTimeout(() => {
       tempForm.remove();
+      isSubmitting = false;
       confirmBtn.disabled = false;
       backBtn.disabled = false;
       confirmBtn.textContent = "ยืนยันบันทึก";
@@ -923,6 +1000,7 @@
       expiryDay.value = "";
       expiryMonth.value = "";
       expiryYear.value = "";
+      expiryHint.hidden = true;
       drugInput.focus();
       loadData();
     }, 1200);
