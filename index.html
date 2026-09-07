@@ -265,7 +265,8 @@
   .hint-accent { color: var(--accent); font-weight: 500; }
   .hint-warn { color: var(--danger); font-weight: 500; }
 
-  input.suggested {
+  input.suggested,
+  .date-group select.suggested {
     border-color: var(--accent-line);
     background: var(--accent-soft);
     font-weight: 600;
@@ -595,6 +596,7 @@
           </select>
           <input type="number" id="expiryYear" inputmode="numeric" min="2020" max="2045" placeholder="ปี ค.ศ." required>
         </div>
+        <div class="hint hint-accent" id="expirySuggestHint" hidden>วันหมดอายุล่าสุดที่เคยบันทึกของล็อตนี้ — ตรวจสอบกับกล่องจริงก่อนบันทึก</div>
         <div class="hint hint-warn" id="expiryHint" hidden></div>
       </div>
 
@@ -777,6 +779,7 @@
   const expiryMonth = document.getElementById("expiryMonth");
   const expiryYear = document.getElementById("expiryYear");
   const expiryHint = document.getElementById("expiryHint");
+  const expirySuggestHint = document.getElementById("expirySuggestHint");
   const recorderInput = document.getElementById("recorderInput");
   const form = document.getElementById("entryForm");
   const reviewBtn = document.getElementById("reviewBtn");
@@ -881,6 +884,38 @@
 
   qtyInput.addEventListener("input", checkQtyOutlier);
 
+  // A lot number ties to one manufacturing batch, so the same drug+lot
+  // combination should always carry the same expiry date — suggesting it
+  // saves a re-check and a chance to mistype the date on a refill of stock
+  // already recorded once.
+  function applyExpirySuggestion(expiry) {
+    expiryDay.value = expiry.getDate();
+    expiryMonth.value = expiry.getMonth() + 1;
+    expiryYear.value = expiry.getFullYear();
+    expiryDay.classList.add("suggested");
+    expiryMonth.classList.add("suggested");
+    expiryYear.classList.add("suggested");
+    expirySuggestHint.hidden = false;
+    checkExpiryPast();
+  }
+
+  function clearExpirySuggestionStyle() {
+    expiryDay.classList.remove("suggested");
+    expiryMonth.classList.remove("suggested");
+    expiryYear.classList.remove("suggested");
+    expirySuggestHint.hidden = true;
+  }
+
+  function updateExpirySuggestion() {
+    const key = drugInput.value.trim() + "|||" + lotInput.value.trim();
+    const expiry = expiryByDrugLot[key];
+    if (expiry) {
+      applyExpirySuggestion(expiry);
+    } else {
+      clearExpirySuggestionStyle();
+    }
+  }
+
   function selectDrug(value) {
     drugInput.value = value;
     drugList.hidden = true;
@@ -901,11 +936,13 @@
       lotHint.hidden = true;
       lotInput.focus();
     }
+    updateExpirySuggestion();
   }
 
   lotInput.addEventListener("input", () => {
     lotInput.classList.remove("suggested");
     lotHint.hidden = true;
+    updateExpirySuggestion();
   });
 
   // A name typed here is added to knownDrugs right away so it passes
@@ -916,7 +953,10 @@
     selectDrug(value);
   }
 
-  drugInput.addEventListener("input", () => renderList(drugInput.value));
+  drugInput.addEventListener("input", () => {
+    renderList(drugInput.value);
+    clearExpirySuggestionStyle();
+  });
 
   drugInput.addEventListener("keydown", (e) => {
     if (drugList.hidden) return;
@@ -1142,6 +1182,7 @@
       expiryMonth.value = "";
       expiryYear.value = "";
       expiryHint.hidden = true;
+      clearExpirySuggestionStyle();
       drugInput.focus();
       loadData();
     }, 1200);
@@ -1158,6 +1199,7 @@
   const searchList = document.getElementById("searchList");
   const searchCount = document.getElementById("searchCount");
   let lastLotByDrug = {};
+  let expiryByDrugLot = {};
   let allRows = [];
 
   function parseGvizDate(v) {
@@ -1245,6 +1287,22 @@
     }
     const result = {};
     for (const drug in map) result[drug] = map[drug].lot;
+    return result;
+  }
+
+  // Keyed by "drug|||lot" rather than lot alone — the same lot code could,
+  // in principle, coincidentally recur for a different drug, and a batch's
+  // expiry date is tied to its lot number, not to the drug name by itself.
+  function buildExpiryByDrugLot(rows) {
+    const map = {};
+    for (const r of rows) {
+      if (!r.drug || !r.lot || !r.expiry) continue;
+      const key = r.drug + "|||" + r.lot;
+      const prev = map[key];
+      if (!prev || r.ts > prev.ts) map[key] = { expiry: r.expiry, ts: r.ts };
+    }
+    const result = {};
+    for (const key in map) result[key] = map[key].expiry;
     return result;
   }
 
@@ -1342,6 +1400,7 @@
 
       allRows = rows;
       lastLotByDrug = buildLastLotByDrug(rows);
+      expiryByDrugLot = buildExpiryByDrugLot(rows);
       qtyStatsByDrug = buildQtyStatsByDrug(rows);
       rows.forEach(r => { if (r.drug) knownDrugs.add(r.drug); });
       renderTodayHistory(rows);
