@@ -455,6 +455,77 @@
     text-underline-offset: 2px;
   }
 
+  .hist-actions { flex: none; display: flex; gap: 2px; }
+  .hist-action-btn {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: none;
+    border-radius: 8px;
+    cursor: pointer;
+    color: var(--ink-faint);
+  }
+  .hist-action-btn:hover { background: var(--bg); color: var(--ink); }
+  .hist-action-btn svg { width: 16px; height: 16px; stroke: currentColor; }
+
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 16, 20, 0.5);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 0;
+    z-index: 20;
+  }
+  @media (min-width: 520px) {
+    .modal-overlay { align-items: center; padding: 20px; }
+  }
+  .modal-card {
+    background: var(--surface);
+    width: min(480px, 100%);
+    max-height: 90vh;
+    overflow-y: auto;
+    border-radius: 18px 18px 0 0;
+    padding: 22px clamp(20px, 5vw, 28px) 26px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    box-shadow: 0 -4px 24px rgba(20, 34, 43, 0.2);
+  }
+  @media (min-width: 520px) {
+    .modal-card { border-radius: 18px; }
+  }
+  .danger-link {
+    font: inherit;
+    font-size: 0.86rem;
+    font-weight: 600;
+    color: var(--danger);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    text-align: center;
+  }
+  .danger-link:hover { text-decoration: underline; }
+
+  .danger-btn {
+    font: inherit;
+    font-weight: 700;
+    font-size: 0.92rem;
+    color: var(--accent-ink);
+    background: var(--danger);
+    border: none;
+    border-radius: 12px;
+    padding: 13px;
+    cursor: pointer;
+  }
+  .danger-btn:hover { opacity: 0.9; }
+  .danger-btn:disabled { opacity: 0.55; cursor: wait; }
+
   footer { text-align: center; font-size: 0.75rem; color: var(--ink-faint); padding: 2px; }
 
   @media (max-width: 380px) { .row { grid-template-columns: 1fr; } }
@@ -579,6 +650,66 @@
   </section>
 </main>
 
+<div class="modal-overlay" id="editOverlay" hidden>
+  <div class="modal-card">
+    <div class="review-title">แก้ไขรายการ</div>
+    <div class="field">
+      <label for="editDrug">ชื่อยา</label>
+      <input type="text" id="editDrug">
+    </div>
+    <div class="row">
+      <div class="field">
+        <label for="editLot">เลขล็อต</label>
+        <input type="text" id="editLot">
+      </div>
+      <div class="field">
+        <label for="editQty">จำนวน</label>
+        <input type="number" id="editQty" inputmode="numeric" min="1" step="1">
+      </div>
+    </div>
+    <div class="field">
+      <label for="editExpiryDay">วันหมดอายุ (ค.ศ.)</label>
+      <div class="date-group">
+        <input type="number" id="editExpiryDay" inputmode="numeric" min="1" max="31" placeholder="วว">
+        <select id="editExpiryMonth">
+          <option value="" disabled selected>เดือน</option>
+          <option value="1">ม.ค.</option>
+          <option value="2">ก.พ.</option>
+          <option value="3">มี.ค.</option>
+          <option value="4">เม.ย.</option>
+          <option value="5">พ.ค.</option>
+          <option value="6">มิ.ย.</option>
+          <option value="7">ก.ค.</option>
+          <option value="8">ส.ค.</option>
+          <option value="9">ก.ย.</option>
+          <option value="10">ต.ค.</option>
+          <option value="11">พ.ย.</option>
+          <option value="12">ธ.ค.</option>
+        </select>
+        <input type="number" id="editExpiryYear" inputmode="numeric" min="2020" max="2045" placeholder="ปี ค.ศ.">
+      </div>
+    </div>
+    <div class="field">
+      <label for="editRecorder">ผู้บันทึก</label>
+      <div class="prefix-group">
+        <span class="prefix-tag">PH</span>
+        <input type="text" id="editRecorder" inputmode="numeric" aria-label="รหัสผู้บันทึกต่อจาก PH">
+      </div>
+    </div>
+    <div class="status" id="editStatus" role="status" hidden></div>
+    <div class="actions-row" style="margin-top: 4px;" id="editActionsRow">
+      <button type="button" class="secondary" id="editCancelBtn">ยกเลิก</button>
+      <button type="button" class="primary" id="editSaveBtn">บันทึกการแก้ไข</button>
+    </div>
+    <button type="button" class="danger-link" id="editDeleteBtn">ลบรายการนี้</button>
+
+    <div class="actions-row" id="editDeleteConfirmRow" hidden>
+      <button type="button" class="secondary" id="editDeleteCancelBtn">ไม่ลบ</button>
+      <button type="button" class="danger-btn" id="editDeleteConfirmBtn">ยืนยันลบรายการนี้</button>
+    </div>
+  </div>
+</div>
+
 <iframe name="hiddenTarget" style="display:none" title="ช่องส่งข้อมูล"></iframe>
 
 <script>
@@ -625,6 +756,16 @@
   // submitted as this literal option (added as a real 60th option in the
   // Form) with the actual name carried in a separate short-answer field.
   const OTHER_DRUG_OPTION = "อื่นๆ (ระบุในช่องด้านล่าง)";
+
+  // Backend for editing/deleting an already-submitted row — the Form/Sheet
+  // pipeline above is append-only, so this small Apps Script Web App (bound
+  // to the same Sheet) is the only way to modify or remove an existing row.
+  // The secret is a basic filter against stray/automated hits, not real
+  // security: it lives in this public page's source, visible to anyone who
+  // looks. The Web App URL itself is not published anywhere, which is the
+  // actual barrier.
+  const EDIT_API_URL = "https://script.google.com/macros/s/AKfycbxIMbs1H-H-W5QnsrNTtzTIULtfC50LMMkASXin_dNX2rbjUEAOnXqmLE2hwaqAMi5P/exec";
+  const EDIT_API_SECRET = "Nw0tlsH7DSozuIV3qLGpPOKiW2AngB8E";
 
   const drugInput = document.getElementById("drugInput");
   const drugList = document.getElementById("drugList");
@@ -1021,10 +1162,17 @@
 
   function parseGvizDate(v) {
     // gviz encodes datetime cells as the literal string "Date(Y,M,D,h,m,s)"
-    // with a zero-indexed month, matching the JS Date constructor.
+    // with a zero-indexed month, matching the JS Date constructor. A
+    // date-only cell (no time of day) omits h/m/s entirely — those groups
+    // come back as undefined, not "0", so they must be checked explicitly
+    // rather than converted with a blind .map(Number) (which turns
+    // undefined into NaN and silently produces an Invalid Date).
     const m = /^Date\((\d+),(\d+),(\d+)(?:,(\d+),(\d+),(\d+))?\)$/.exec(v || "");
     if (!m) return null;
-    const [, y, mo, d, h = 0, mi = 0, s = 0] = m.map(Number);
+    const y = Number(m[1]), mo = Number(m[2]), d = Number(m[3]);
+    const h = m[4] !== undefined ? Number(m[4]) : 0;
+    const mi = m[5] !== undefined ? Number(m[5]) : 0;
+    const s = m[6] !== undefined ? Number(m[6]) : 0;
     return new Date(y, mo, d, h, mi, s);
   }
 
@@ -1042,9 +1190,12 @@
     return String(d.getDate()).padStart(2, "0") + "/" + String(d.getMonth() + 1).padStart(2, "0") + "/" + d.getFullYear();
   }
 
+  let currentTodayRows = [];
+
   function renderTodayHistory(rows) {
     const today = new Date();
     const todayRows = rows.filter(r => sameDay(r.ts, today)).sort((a, b) => b.ts - a.ts);
+    currentTodayRows = todayRows;
 
     histCount.textContent = todayRows.length > 0 ? `${todayRows.length} รายการ` : "";
 
@@ -1055,7 +1206,7 @@
       return;
     }
 
-    histList.innerHTML = todayRows.map(r => {
+    histList.innerHTML = todayRows.map((r, i) => {
       const time = fmtTime(r.ts);
       const metaParts = [r.lot, r.qty ? `จำนวน ${r.qty}` : "", r.recorder].filter(Boolean);
       return `
@@ -1066,11 +1217,23 @@
             <div class="hist-meta">${escapeHtml(metaParts.join(" · "))}</div>
           </div>
           <span class="hist-time">${escapeHtml(time)}</span>
+          <div class="hist-actions">
+            <button type="button" class="hist-action-btn" data-edit-idx="${i}" aria-label="แก้ไข">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+            </button>
+          </div>
         </div>`;
     }).join("");
     histState.hidden = true;
     histList.hidden = false;
   }
+
+  histList.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-edit-idx]");
+    if (!btn) return;
+    const row = currentTodayRows[Number(btn.dataset.editIdx)];
+    if (row) openEditModal(row);
+  });
 
   function buildLastLotByDrug(rows) {
     const map = {};
@@ -1171,6 +1334,7 @@
             drug,
             lot: c[2] && c[2].v ? String(c[2].v) : "",
             recorder: c[3] && c[3].v ? String(c[3].v) : "",
+            expiry: c[4] && c[4].v ? parseGvizDate(c[4].v) : null,
             qty: c[5] && c[5].v !== null && c[5].v !== undefined ? String(c[5].v) : ""
           };
         })
@@ -1191,6 +1355,182 @@
       if (retry) retry.addEventListener("click", loadData);
     }
   }
+
+  // --- edit / delete an already-submitted row, via the small Apps Script
+  // Web App bound to the same Sheet (see EDIT_API_URL above) ---
+  const editOverlay = document.getElementById("editOverlay");
+  const editDrug = document.getElementById("editDrug");
+  const editLot = document.getElementById("editLot");
+  const editQty = document.getElementById("editQty");
+  const editExpiryDay = document.getElementById("editExpiryDay");
+  const editExpiryMonth = document.getElementById("editExpiryMonth");
+  const editExpiryYear = document.getElementById("editExpiryYear");
+  const editRecorder = document.getElementById("editRecorder");
+  const editStatus = document.getElementById("editStatus");
+  const editCancelBtn = document.getElementById("editCancelBtn");
+  const editSaveBtn = document.getElementById("editSaveBtn");
+  const editActionsRow = document.getElementById("editActionsRow");
+  const editDeleteBtn = document.getElementById("editDeleteBtn");
+  const editDeleteConfirmRow = document.getElementById("editDeleteConfirmRow");
+  const editDeleteCancelBtn = document.getElementById("editDeleteCancelBtn");
+  const editDeleteConfirmBtn = document.getElementById("editDeleteConfirmBtn");
+  let editTarget = null;
+
+  // Identifies a row the same way the Apps Script backend does: by its
+  // Timestamp's wall-clock components (stable even if other rows are
+  // inserted elsewhere), cross-checked against the recorder at edit time.
+  function tsKey(d) {
+    return [d.getFullYear(), d.getMonth() + 1, d.getDate(), d.getHours(), d.getMinutes(), d.getSeconds()].join("-");
+  }
+
+  function openEditModal(row) {
+    editTarget = row;
+    editStatus.hidden = true;
+    editDrug.value = row.drug;
+    editLot.value = row.lot;
+    editQty.value = row.qty;
+    if (row.expiry) {
+      editExpiryDay.value = row.expiry.getDate();
+      editExpiryMonth.value = row.expiry.getMonth() + 1;
+      editExpiryYear.value = row.expiry.getFullYear();
+    } else {
+      editExpiryDay.value = "";
+      editExpiryMonth.value = "";
+      editExpiryYear.value = "";
+    }
+    editRecorder.value = (row.recorder || "").replace(/^PH/i, "");
+    editSaveBtn.disabled = false;
+    editDeleteBtn.disabled = false;
+    editSaveBtn.textContent = "บันทึกการแก้ไข";
+    editActionsRow.hidden = false;
+    editDeleteBtn.hidden = false;
+    editDeleteConfirmRow.hidden = true;
+    editOverlay.hidden = false;
+  }
+
+  function closeEditModal() {
+    editOverlay.hidden = true;
+    editTarget = null;
+  }
+
+  editCancelBtn.addEventListener("click", closeEditModal);
+  editOverlay.addEventListener("click", (e) => {
+    if (e.target === editOverlay) closeEditModal();
+  });
+
+  function showEditStatus(kind, text) {
+    editStatus.hidden = false;
+    editStatus.className = "status " + kind;
+    editStatus.textContent = text;
+  }
+
+  async function callEditApi(action, values) {
+    const res = await fetch(EDIT_API_URL, {
+      method: "POST",
+      // text/plain avoids a CORS preflight, which the Apps Script Web App
+      // does not handle; the body is still parsed as JSON on the other end.
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({
+        secret: EDIT_API_SECRET,
+        action,
+        match: { tsKey: tsKey(editTarget.ts), recorder: editTarget.recorder },
+        values
+      })
+    });
+    return res.json();
+  }
+
+  editSaveBtn.addEventListener("click", async () => {
+    if (!editTarget) return;
+    const drugVal = editDrug.value.trim();
+    const lotVal = editLot.value.trim();
+    const qtyVal = editQty.value.trim();
+    const d = parseInt(editExpiryDay.value, 10);
+    const m = parseInt(editExpiryMonth.value, 10);
+    const y = parseInt(editExpiryYear.value, 10);
+    if (!drugVal || !lotVal || !qtyVal || !d || !m || !y) {
+      showEditStatus("err", "กรุณากรอกข้อมูลให้ครบทุกช่อง");
+      return;
+    }
+    const dt = new Date(y, m - 1, d);
+    if (dt.getFullYear() !== y || dt.getMonth() !== m - 1 || dt.getDate() !== d) {
+      showEditStatus("err", "วันหมดอายุไม่ถูกต้อง");
+      return;
+    }
+
+    const values = { lot: lotVal, qty: qtyVal, expiryYear: y, expiryMonth: m, expiryDay: d, recorder: editRecorder.value.trim() ? "PH" + editRecorder.value.trim() : editTarget.recorder };
+    if (DRUGS.includes(drugVal)) {
+      values.drug = drugVal;
+      values.otherDrugName = "";
+    } else {
+      values.drug = OTHER_DRUG_OPTION;
+      values.otherDrugName = drugVal;
+    }
+
+    editSaveBtn.disabled = true;
+    editDeleteBtn.disabled = true;
+    editSaveBtn.textContent = "กำลังบันทึก...";
+    try {
+      const result = await callEditApi("update", values);
+      if (result.ok) {
+        closeEditModal();
+        showStatus("ok", "แก้ไขรายการเรียบร้อย");
+        loadData();
+      } else {
+        showEditStatus("err", result.error === "row_not_found" ? "ไม่พบรายการนี้ อาจถูกแก้ไขไปแล้ว ลองโหลดหน้าใหม่" : "แก้ไขไม่สำเร็จ: " + result.error);
+        editSaveBtn.disabled = false;
+        editDeleteBtn.disabled = false;
+        editSaveBtn.textContent = "บันทึกการแก้ไข";
+      }
+    } catch (err) {
+      showEditStatus("err", "เชื่อมต่อไม่สำเร็จ ลองใหม่อีกครั้ง");
+      editSaveBtn.disabled = false;
+      editDeleteBtn.disabled = false;
+      editSaveBtn.textContent = "บันทึกการแก้ไข";
+    }
+  });
+
+  // A native confirm() would block here instead of a normal in-page
+  // control, so "delete" is a two-step disclosure within the modal itself:
+  // the link swaps for an explicit confirm/cancel pair before anything
+  // is sent to the API.
+  editDeleteBtn.addEventListener("click", () => {
+    if (!editTarget) return;
+    editActionsRow.hidden = true;
+    editDeleteBtn.hidden = true;
+    editDeleteConfirmRow.hidden = false;
+  });
+
+  editDeleteCancelBtn.addEventListener("click", () => {
+    editActionsRow.hidden = false;
+    editDeleteBtn.hidden = false;
+    editDeleteConfirmRow.hidden = true;
+  });
+
+  editDeleteConfirmBtn.addEventListener("click", async () => {
+    if (!editTarget) return;
+    editDeleteCancelBtn.disabled = true;
+    editDeleteConfirmBtn.disabled = true;
+    editDeleteConfirmBtn.textContent = "กำลังลบ...";
+    try {
+      const result = await callEditApi("delete", {});
+      if (result.ok) {
+        closeEditModal();
+        showStatus("ok", "ลบรายการเรียบร้อย");
+        loadData();
+      } else {
+        showEditStatus("err", result.error === "row_not_found" ? "ไม่พบรายการนี้ อาจถูกลบไปแล้ว ลองโหลดหน้าใหม่" : "ลบไม่สำเร็จ: " + result.error);
+        editDeleteCancelBtn.disabled = false;
+        editDeleteConfirmBtn.disabled = false;
+        editDeleteConfirmBtn.textContent = "ยืนยันลบรายการนี้";
+      }
+    } catch (err) {
+      showEditStatus("err", "เชื่อมต่อไม่สำเร็จ ลองใหม่อีกครั้ง");
+      editDeleteCancelBtn.disabled = false;
+      editDeleteConfirmBtn.disabled = false;
+      editDeleteConfirmBtn.textContent = "ยืนยันลบรายการนี้";
+    }
+  });
 
   loadData();
 </script>
